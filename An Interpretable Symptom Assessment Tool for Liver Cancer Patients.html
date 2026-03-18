@@ -1,0 +1,1698 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>肝癌患者可解释性症状评估工具 / An Interpretable Symptom Assessment Tool for Liver Cancer Patients</title>
+  <style>
+    :root{
+      --bg:#f6f7fb;
+      --card:#ffffff;
+      --text:#0f172a;
+      --muted:#64748b;
+      --line:#e5e7eb;
+      --good:#10b981;
+      --warn:#f59e0b;
+      --bad:#ef4444;
+      --blue:#2563eb;
+      --blue-soft:#dbeafe;
+      --pink:#db2777;
+      --pink-soft:#fce7f3;
+      --purple:#7c3aed;
+      --slate:#334155;
+      --chip:#f8fafc;
+    }
+
+    *{box-sizing:border-box}
+
+    html, body{
+      min-height:100%;
+    }
+
+    body{
+      margin:0;
+      font-family:ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+      background:var(--bg);
+      color:var(--text);
+    }
+
+    header{
+      padding:20px 20px 16px;
+      border-bottom:1px solid var(--line);
+      background:linear-gradient(180deg,#fff,#fafafa);
+    }
+
+    .header-top{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:18px;
+    }
+
+    .title-wrap{
+      flex:1 1 auto;
+      min-width:280px;
+    }
+
+    header h1{
+      margin:0;
+      font-size:24px;
+      line-height:1.35;
+    }
+
+    .header-actions{
+      display:flex;
+      flex-direction:column;
+      align-items:flex-end;
+      gap:10px;
+      flex:0 0 auto;
+    }
+
+    .report-actions{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+
+    .lang-switch{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+
+    .lang-btn{
+      border:1px solid var(--line);
+      background:#fff;
+      color:var(--text);
+      padding:7px 12px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:800;
+      cursor:pointer;
+      transition:.18s ease;
+      box-shadow:0 1px 2px rgba(15,23,42,.04);
+    }
+    .lang-btn:hover{transform:translateY(-1px)}
+    .lang-btn.active{
+      background:#eef2ff;
+      border-color:#c7d2fe;
+      color:#1e3a8a;
+    }
+
+    .head-sub{
+      margin-top:8px;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.55;
+      max-width:980px;
+    }
+
+    .wrap{
+      max-width:1460px;
+      margin:0 auto;
+      padding:16px;
+    }
+
+    .main{
+      display:grid;
+      grid-template-columns: 1.18fr 0.82fr;
+      gap:16px;
+      align-items:stretch;
+    }
+
+    .rightCol{
+      display:flex;
+      flex-direction:column;
+      gap:16px;
+      height:100%;
+      min-height:100%;
+    }
+
+    @media (max-width: 1080px){
+      .main{
+        grid-template-columns:1fr;
+      }
+      .rightCol{
+        height:auto;
+        min-height:0;
+      }
+    }
+
+    @media (max-width: 860px){
+      .header-top{
+        flex-direction:column;
+        align-items:stretch;
+      }
+      .header-actions{
+        align-items:flex-start;
+      }
+      .report-actions,
+      .lang-switch{
+        justify-content:flex-start;
+      }
+      header h1{
+        font-size:22px;
+      }
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:16px;
+      box-shadow:0 2px 10px rgba(15,23,42,.03);
+      height:100%;
+    }
+
+    .rightCol .card:last-child{
+      flex:1 1 auto;
+      display:flex;
+      flex-direction:column;
+    }
+
+    .rightCol .card:last-child .summaryBox{
+      flex:0 0 auto;
+    }
+
+    .rightCol .card:last-child .explain{
+      flex:1 1 auto;
+    }
+
+    .card h2{
+      margin:0 0 12px;
+      font-size:16px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      line-height:1.4;
+    }
+
+    .hr{
+      height:1px;
+      background:var(--line);
+      margin:14px 0;
+    }
+
+    .row{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
+    .btn{
+      border:1px solid var(--line);
+      background:#fff;
+      padding:9px 12px;
+      border-radius:10px;
+      font-size:13px;
+      cursor:pointer;
+      transition:.18s ease;
+    }
+    .btn:hover{transform:translateY(-1px)}
+    .btn.primary{
+      border-color:#c7d2fe;
+      background:#eef2ff;
+      color:#1e3a8a;
+      font-weight:800;
+    }
+    .btn.ghost{background:var(--chip)}
+    .btn.danger{
+      border-color:#fecaca;
+      background:#fef2f2;
+      color:#7f1d1d;
+      font-weight:800;
+    }
+    .btn.export{
+      border-color:#bfdbfe;
+      background:#eff6ff;
+      color:#1d4ed8;
+      font-weight:800;
+    }
+    .btn.print{
+      border-color:#ddd6fe;
+      background:#f5f3ff;
+      color:#6d28d9;
+      font-weight:800;
+    }
+
+    .status{
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      font-size:12px;
+      background:#fff;
+      color:var(--muted);
+    }
+
+    .pill{
+      padding:4px 8px;
+      border-radius:999px;
+      font-size:12px;
+      border:1px solid var(--line);
+      background:#fafafa;
+      color:var(--muted);
+      white-space:nowrap;
+    }
+    .pill.req{background:#fff7ed;border-color:#fed7aa;color:#7c2d12;font-weight:900}
+    .pill.psy{background:#fdf2f8;border-color:#fbcfe8;color:#9d174d;font-weight:800}
+    .pill.sym{background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8;font-weight:800}
+
+    .section-mini{
+      margin:0 0 8px;
+      font-size:13px;
+      font-weight:900;
+      color:var(--muted);
+    }
+
+    .infoGrid{
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap:10px;
+    }
+    @media (max-width: 980px){ .infoGrid{grid-template-columns: repeat(2,1fr)} }
+    @media (max-width: 560px){ .infoGrid{grid-template-columns:1fr} }
+
+    .field{
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:10px;
+      background:#fff;
+    }
+    .field label{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:8px;
+      font-size:12px;
+      font-weight:900;
+      line-height:1.4;
+    }
+    .field label span.optional{
+      font-weight:600;
+      color:var(--muted);
+      font-size:11px;
+      white-space:nowrap;
+    }
+    .field input, .field select{
+      width:100%;
+      margin-top:8px;
+      padding:9px 10px;
+      border:1px solid var(--line);
+      border-radius:10px;
+      font-size:14px;
+      background:#fff;
+    }
+
+    .scoreGrid{
+      display:grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap:10px;
+    }
+    @media (max-width: 560px){ .scoreGrid{grid-template-columns:1fr} }
+
+    .scoreField{
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:10px;
+      background:#fff;
+      transition:.18s ease;
+    }
+    .scoreField:hover{
+      border-color:#dbe2ea;
+      box-shadow:0 2px 8px rgba(15,23,42,.04);
+    }
+    .scoreField.symptom{
+      background:linear-gradient(180deg,#ffffff,#fcfdff);
+    }
+    .scoreField.psych{
+      background:linear-gradient(180deg,#ffffff,#fffafc);
+      border-color:#f3d5e6;
+    }
+
+    .scoreField .head{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      align-items:flex-start;
+    }
+    .scoreField .name{
+      font-size:13px;
+      font-weight:900;
+      line-height:1.45;
+    }
+
+    .badge{
+      font-size:11px;
+      padding:2px 7px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background:var(--chip);
+      color:var(--muted);
+      white-space:nowrap;
+    }
+    .badge.req{background:#fff7ed;border-color:#fed7aa;color:#7c2d12;font-weight:900}
+    .badge.opt{background:#f1f5f9;border-color:#e2e8f0}
+    .badge.psych{background:#fdf2f8;border-color:#fbcfe8;color:#9d174d;font-weight:900}
+
+    .ctrl{
+      display:grid;
+      grid-template-columns: 0.92fr 1.08fr;
+      gap:8px;
+      align-items:center;
+      margin-top:8px;
+    }
+    .ctrl input[type="number"]{
+      width:100%;
+      padding:8px 10px;
+      border:1px solid var(--line);
+      border-radius:10px;
+      font-size:14px;
+    }
+
+    .ctrl input[type="range"]{
+      width:100%;
+      appearance:none;
+      height:6px;
+      border-radius:999px;
+      outline:none;
+      background:#e5e7eb;
+    }
+    .ctrl input[type="range"]::-webkit-slider-thumb{
+      appearance:none;
+      width:18px;
+      height:18px;
+      border-radius:50%;
+      border:2px solid #fff;
+      box-shadow:0 1px 4px rgba(0,0,0,.18);
+      cursor:pointer;
+      margin-top:-6px;
+    }
+    .ctrl input[type="range"]::-webkit-slider-runnable-track{
+      height:6px;
+      border-radius:999px;
+    }
+    .ctrl input[type="range"]::-moz-range-thumb{
+      width:18px;
+      height:18px;
+      border:none;
+      border-radius:50%;
+      cursor:pointer;
+      box-shadow:0 1px 4px rgba(0,0,0,.18);
+    }
+
+    .scoreField.symptom .ctrl input[type="range"]{
+      background:linear-gradient(90deg,var(--blue-soft),#bfdbfe);
+    }
+    .scoreField.symptom .ctrl input[type="range"]::-webkit-slider-thumb{
+      background:var(--blue);
+    }
+    .scoreField.symptom .ctrl input[type="range"]::-moz-range-thumb{
+      background:var(--blue);
+    }
+
+    .scoreField.psych .ctrl input[type="range"]{
+      background:linear-gradient(90deg,var(--pink-soft),#f5d0fe);
+    }
+    .scoreField.psych .ctrl input[type="range"]::-webkit-slider-thumb{
+      background:var(--purple);
+    }
+    .scoreField.psych .ctrl input[type="range"]::-moz-range-thumb{
+      background:var(--purple);
+    }
+
+    .resultMain{
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:14px;
+      background:#fff;
+    }
+
+    .resultTitle{
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.35;
+    }
+
+    .resultValue{
+      font-size:20px;
+      font-weight:1000;
+      margin-top:6px;
+      line-height:1.45;
+    }
+
+    .resultTag{
+      margin-top:8px;
+    }
+
+    .tag{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:4px 10px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:1000;
+      border:1px solid var(--line);
+      background:#fff
+    }
+    .tag.good{color:#065f46;border-color:#a7f3d0;background:#ecfdf5}
+    .tag.bad{color:#7f1d1d;border-color:#fecaca;background:#fef2f2}
+    .tag.warn{color:#7c2d12;border-color:#fed7aa;background:#fff7ed}
+    .tag.psych{color:#9d174d;border-color:#fbcfe8;background:#fdf2f8}
+
+    .section-title{
+      margin:0;
+      font-size:14px;
+      font-weight:1000;
+      line-height:1.45;
+    }
+
+    .bars{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      margin-top:10px;
+    }
+
+    .bar{
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:#fff;
+      padding:10px;
+    }
+    .bar .top{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      align-items:flex-start;
+    }
+    .bar .nm{
+      font-weight:1000;
+      font-size:13px;
+      line-height:1.45;
+    }
+    .bar .val{
+      font-size:12px;
+      color:var(--muted);
+      white-space:nowrap;
+    }
+    .track{
+      height:10px;
+      border-radius:999px;
+      background:#f1f5f9;
+      margin-top:8px;
+      overflow:hidden;
+    }
+    .fill{height:10px;border-radius:999px;background:var(--blue);width:0%}
+    .fill.pink{background:var(--pink)}
+    .fill.grey{background:#64748b}
+    .bar-note{
+      margin-top:6px;
+      font-size:11px;
+      color:var(--muted);
+      line-height:1.35;
+    }
+
+    .summaryBox{
+      border:1px solid #dbeafe;
+      background:linear-gradient(180deg,#eff6ff,#ffffff);
+      border-radius:14px;
+      padding:12px;
+    }
+    .summaryBox .tt{
+      font-size:13px;
+      font-weight:1000;
+      margin-bottom:6px;
+      color:#1d4ed8;
+      line-height:1.4;
+    }
+    .summaryBox .txt{
+      font-size:13px;
+      color:var(--slate);
+      line-height:1.65;
+    }
+
+    .explain{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      margin-top:10px;
+      min-height:240px;
+    }
+
+    .exp-item{
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:12px;
+      background:#fff;
+    }
+    .exp-head{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      align-items:center;
+      margin-bottom:6px;
+    }
+    .exp-title{
+      font-weight:1000;
+      font-size:14px;
+      line-height:1.4;
+    }
+    .exp-text{
+      color:var(--slate);
+      font-size:13px;
+      line-height:1.65;
+    }
+
+    .legend{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-top:8px;
+    }
+
+    .bilingual .cn,
+    .bilingual .en{
+      display:block;
+    }
+
+    .lang-cn .bilingual .en{display:none !important;}
+    .lang-en .bilingual .cn{display:none !important;}
+    .lang-bi .bilingual .cn{display:block !important;}
+    .lang-bi .bilingual .en{display:block !important;}
+
+    .bilingual .en{
+      color:var(--muted);
+      margin-top:2px;
+      font-size:.92em;
+      font-weight:600;
+    }
+
+    @media print{
+      body{background:#fff}
+      .btn, .status, .lang-switch, .report-actions{display:none !important}
+      .main{grid-template-columns:1fr}
+      .card{box-shadow:none;break-inside:avoid}
+    }
+  </style>
+</head>
+
+<body class="lang-bi">
+<header>
+  <div class="header-top">
+    <div class="title-wrap">
+      <h1 class="bilingual">
+        <span class="cn">肝癌患者可解释性症状评估工具</span>
+        <span class="en">An Interpretable Symptom Assessment Tool for Liver Cancer Patients</span>
+      </h1>
+    </div>
+
+    <div class="header-actions">
+      <div class="report-actions">
+        <button class="btn export" id="btnExport"></button>
+        <button class="btn print" id="btnPrint"></button>
+      </div>
+
+      <div class="lang-switch">
+        <button class="lang-btn" id="btnLangCn"></button>
+        <button class="lang-btn" id="btnLangEn"></button>
+        <button class="lang-btn active" id="btnLangBi"></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="head-sub bilingual">
+    <span class="cn">录入评分后可生成风险分层、重点症状与结果解读。</span>
+    <span class="en">Enter scores to generate risk stratification, priority symptoms, and interpretation.</span>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="main">
+
+    <div class="card" id="leftPanel">
+      <h2 class="bilingual">
+        <span class="cn">模块1：信息与评估</span>
+        <span class="en">Module 1: Input & Assessment</span>
+        <span class="pill req">Top10 Required</span>
+      </h2>
+
+      <div class="section-mini bilingual">
+        <span class="cn">患者信息</span>
+        <span class="en">Patient Info</span>
+      </div>
+      <div class="infoGrid" id="infoGrid"></div>
+
+      <div class="hr"></div>
+
+      <div class="row">
+        <button class="btn primary" id="btnRun"></button>
+        <button class="btn ghost" id="btnFillLow"></button>
+        <button class="btn ghost" id="btnFillHigh"></button>
+        <button class="btn danger" id="btnClear"></button>
+        <span class="status" id="status"></span>
+      </div>
+
+      <div class="legend">
+        <span class="pill sym bilingual">
+          <span class="cn">症状</span>
+          <span class="en">Symptoms</span>
+        </span>
+        <span class="pill psy bilingual">
+          <span class="cn">焦虑/抑郁</span>
+          <span class="en">Anxiety / Depression</span>
+        </span>
+      </div>
+
+      <div class="hr"></div>
+      <div class="scoreGrid" id="scoresReq"></div>
+
+      <div class="hr"></div>
+      <div class="scoreGrid" id="scoresOpt"></div>
+    </div>
+
+    <div class="rightCol" id="rightPanel">
+      <div class="card">
+        <h2 class="bilingual">
+          <span class="cn">模块2：结果输出</span>
+          <span class="en">Module 2: Results</span>
+        </h2>
+
+        <div class="resultMain">
+          <div class="resultTitle bilingual">
+            <span class="cn">风险等级</span>
+            <span class="en">Risk Level</span>
+          </div>
+          <div class="resultValue" id="riskLabel">—</div>
+          <div class="resultTag" id="riskDesc">—</div>
+        </div>
+
+        <div class="hr"></div>
+
+        <div>
+          <div class="section-title bilingual">
+            <span class="cn">Top5 重点症状</span>
+            <span class="en">Top 5 Priority Symptoms</span>
+          </div>
+          <div class="bars" id="top5Bars"></div>
+        </div>
+
+        <div class="hr"></div>
+
+        <div>
+          <div class="section-title bilingual">
+            <span class="cn">关键桥接节点</span>
+            <span class="en">Key Bridge Nodes</span>
+          </div>
+          <div class="bars" id="bridgeBars"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="bilingual">
+          <span class="cn">模块3：结果解读</span>
+          <span class="en">Module 3: Interpretation</span>
+        </h2>
+
+        <div class="summaryBox">
+          <div class="tt bilingual">
+            <span class="cn">综合说明</span>
+            <span class="en">Summary</span>
+          </div>
+          <div class="txt" id="summaryText"></div>
+        </div>
+
+        <div class="explain" id="interpretation"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const CFG = {
+  training: {
+    mean: {
+      MDASI_1: 0.659025787946773,
+      MDASI_2: 1.23495702005731,
+      MDASI_3: 0.369628232186193,
+      MDASI_4: 1.65042979942693,
+      MDASI_5: 0.8395422068897,
+      MDASI_6: 0.553008595988539,
+      MDASI_7: 0.615042979942693,
+      MDASI_8: 0.626074498567335,
+      MDASI_9: 0.70945558739255,
+      MDASI_10: 0.634670487106018,
+      MDASI_11: 0.472779369627507,
+      MDASI_12: 0.146131805157593,
+      MDASI_13: 0.453980821917808,
+      anxiety_total: 5.75415530050505,
+      depression_total: 5.53982808022923
+    },
+    sd: {
+      MDASI_1: 1.41261180366028,
+      MDASI_2: 1.78171946873179,
+      MDASI_3: 1.20023705852168,
+      MDASI_4: 2.19151460086163,
+      MDASI_5: 1.646150258629,
+      MDASI_6: 1.37681004810642,
+      MDASI_7: 1.49327918872064,
+      MDASI_8: 1.62549034646051,
+      MDASI_9: 1.704950490069,
+      MDASI_10: 1.52167343060285,
+      MDASI_11: 1.6434091076037,
+      MDASI_12: 0.773014010089764,
+      MDASI_13: 1.49962309066092,
+      anxiety_total: 3.75894442075629,
+      depression_total: 3.56877303960977
+    }
+  },
+  lpa: {
+    classes: [
+      { id:2, name:"低症状-低心理困扰（低风险）", nameEn:"Low symptom-low psychological distress (Low risk)", risk:"low",
+        centroid:{MDASI_1:-0.15596368770929,MDASI_2:-0.15178652328519,MDASI_3:-0.162829458936616,MDASI_4:-0.15401519618989,MDASI_5:-0.241536892885895,MDASI_6:-0.200851907624691,MDASI_7:-0.169399712992432,MDASI_8:-0.193905497412083,MDASI_9:-0.200835707624436,MDASI_10:-0.159032823853358,MDASI_11:-0.27435768401762,MDASI_12:-0.183678652137363,MDASI_13:-0.153762546228829,anxiety_total:-0.187142698017094,depression_total:-0.163448627903203}
+      },
+      { id:1, name:"高症状-高心理困扰（高风险）", nameEn:"High symptom-high psychological distress (High risk)", risk:"high",
+        centroid:{MDASI_1:1.23971136384307,MDASI_2:1.20650826201048,MDASI_3:1.29428544282951,MDASI_4:1.22422335432989,MDASI_5:1.91990863575967,MDASI_6:1.59651516317062,MDASI_7:1.34651053917061,MDASI_8:1.5413001076345,MDASI_9:1.59638639393783,MDASI_10:1.26410706139849,MDASI_11:2.18079184731954,MDASI_12:1.46000979904058,MDASI_13:1.22221511104966,anxiety_total:1.48754452269998,depression_total:1.29920704230751}
+      }
+    ]
+  },
+  networkWeights: {
+    w: {MDASI_1:0.2,MDASI_2:0.759847,MDASI_3:0.52832,MDASI_4:0.364852,MDASI_5:0.654837,MDASI_6:0.458559,MDASI_7:0.442219,MDASI_8:0.572096,MDASI_9:0.521044,MDASI_10:0.311418,MDASI_11:1.0,MDASI_12:0.4493,MDASI_13:0.572369,anxiety_total:0.653575,depression_total:0.903481},
+    bridgeNodes: ["anxiety_total","depression_total","MDASI_11","MDASI_5","MDASI_2"]
+  },
+  thresholds: { hadsWarn:8, hadsHigh:11, mdasiHigh:7 }
+};
+
+const INFO_FIELDS = [
+  {key:"patient_id", label:"ID号", labelEn:"Patient ID", type:"text", placeholder:"LC-001"},
+  {key:"age", label:"年龄", labelEn:"Age", type:"number", placeholder:""},
+  {key:"sex", label:"性别", labelEn:"Sex", type:"select", optionsCn:["","男","女"], optionsEn:["","Male","Female"]},
+  {key:"height", label:"身高", labelEn:"Height", type:"number", placeholder:"cm"},
+  {key:"weight", label:"体重", labelEn:"Weight", type:"number", placeholder:"kg"},
+  {key:"occupation", label:"职业", labelEn:"Occupation", type:"text", placeholder:""},
+  {key:"education", label:"教育程度", labelEn:"Education", type:"select", optionsCn:["","小学及以下","初中","高中/中专","大专","本科","研究生及以上"], optionsEn:["","Primary or below","Junior high","High school/Technical school","College","Bachelor","Graduate and above"]},
+  {key:"marriage", label:"婚姻", labelEn:"Marital Status", type:"select", optionsCn:["","未婚","已婚","离异","丧偶"], optionsEn:["","Single","Married","Divorced","Widowed"]},
+  {key:"pay", label:"支付方式", labelEn:"Payment", type:"select", optionsCn:["","医保","自费","商保","其他"], optionsEn:["","Insurance","Self-pay","Commercial insurance","Other"]},
+  {key:"comorb", label:"术前合并症", labelEn:"Comorbidities", type:"text", placeholder:""},
+  {key:"chemo_radio", label:"放化疗史", labelEn:"Chemo/Radiotherapy", type:"select", optionsCn:["","无","化疗","放疗","放化疗"], optionsEn:["","None","Chemotherapy","Radiotherapy","Both"]},
+  {key:"surgery_date", label:"手术日期", labelEn:"Surgery Date", type:"date"}
+];
+
+const NODES = [
+  {key:"MDASI_1", label:"M1 疼痛", labelEn:"Pain", min:0, max:10},
+  {key:"MDASI_2", label:"M2 疲乏", labelEn:"Fatigue", min:0, max:10},
+  {key:"MDASI_3", label:"M3 恶心", labelEn:"Nausea", min:0, max:10},
+  {key:"MDASI_4", label:"M4 睡眠障碍", labelEn:"Sleep Disturbance", min:0, max:10},
+  {key:"MDASI_5", label:"M5 困扰/痛苦", labelEn:"Distress", min:0, max:10},
+  {key:"MDASI_6", label:"M6 气短", labelEn:"Shortness of Breath", min:0, max:10},
+  {key:"MDASI_7", label:"M7 记忆困难", labelEn:"Difficulty Remembering", min:0, max:10},
+  {key:"MDASI_8", label:"M8 食欲差", labelEn:"Lack of Appetite", min:0, max:10},
+  {key:"MDASI_9", label:"M9 嗜睡", labelEn:"Drowsiness", min:0, max:10},
+  {key:"MDASI_10",label:"M10 口干", labelEn:"Dry Mouth", min:0, max:10},
+  {key:"MDASI_11",label:"M11 悲伤", labelEn:"Sadness", min:0, max:10},
+  {key:"MDASI_12",label:"M12 呕吐", labelEn:"Vomiting", min:0, max:10},
+  {key:"MDASI_13",label:"M13 麻木", labelEn:"Numbness", min:0, max:10},
+  {key:"anxiety_total", label:"ANX 焦虑总分", labelEn:"Anxiety Total", min:0, max:21},
+  {key:"depression_total", label:"DEP 抑郁总分", labelEn:"Depression Total", min:0, max:21}
+];
+
+const UI_TEXT = {
+  cn: {
+    btnExport: "导出报告",
+    btnPrint: "打印/PDF",
+    btnLangCn: "只中文",
+    btnLangEn: "EN",
+    btnLangBi: "中英",
+    btnRun: "运行",
+    btnFillLow: "低风险示例",
+    btnFillHigh: "高风险示例",
+    btnClear: "清空",
+    statusIdle: "等待输入…",
+    statusCalculating: "计算中…",
+    statusDone: "完成 ✅",
+    statusCleared: "已清空",
+    statusExported: "报告已导出",
+    statusPrintOpened: "已打开打印窗口",
+    statusNeedRequired: "请先补全必填项",
+    statusPopupBlocked: "浏览器拦截了弹窗",
+    summaryDefault: "完成评估后显示结果解读。",
+    optional: "选填",
+    selectPlaceholder: "请选择",
+    requiredBadge: "必填",
+    optionalBadge: "选填",
+    psychBadge: "心理",
+    reqErrorPrefix: "请补全必填项：",
+    outOfRange: "超出范围"
+  },
+  en: {
+    btnExport: "Export Report",
+    btnPrint: "Print/PDF",
+    btnLangCn: "中文",
+    btnLangEn: "EN",
+    btnLangBi: "CN+EN",
+    btnRun: "Run",
+    btnFillLow: "Low-risk Demo",
+    btnFillHigh: "High-risk Demo",
+    btnClear: "Clear",
+    statusIdle: "Waiting for input…",
+    statusCalculating: "Calculating…",
+    statusDone: "Done ✅",
+    statusCleared: "Cleared",
+    statusExported: "Report exported",
+    statusPrintOpened: "Print window opened",
+    statusNeedRequired: "Please complete required fields first",
+    statusPopupBlocked: "Popup blocked by browser",
+    summaryDefault: "Interpretation will appear after evaluation.",
+    optional: "Optional",
+    selectPlaceholder: "Select",
+    requiredBadge: "Req",
+    optionalBadge: "Opt",
+    psychBadge: "Psych",
+    reqErrorPrefix: "Complete required item: ",
+    outOfRange: "out of range"
+  },
+  bi: {
+    btnExport: "导出报告 / Export Report",
+    btnPrint: "打印/PDF",
+    btnLangCn: "只中文",
+    btnLangEn: "EN",
+    btnLangBi: "中英",
+    btnRun: "运行 / Run",
+    btnFillLow: "低风险示例 / Low-risk Demo",
+    btnFillHigh: "高风险示例 / High-risk Demo",
+    btnClear: "清空 / Clear",
+    statusIdle: "等待输入… / Waiting for input…",
+    statusCalculating: "计算中… / Calculating…",
+    statusDone: "完成 ✅ / Done",
+    statusCleared: "已清空 / Cleared",
+    statusExported: "报告已导出 / Report exported",
+    statusPrintOpened: "已打开打印窗口 / Print window opened",
+    statusNeedRequired: "请先补全必填项 / Complete required fields first",
+    statusPopupBlocked: "浏览器拦截了弹窗 / Popup blocked by browser",
+    summaryDefault: "完成评估后显示结果解读。 / Interpretation will appear after evaluation.",
+    optional: "选填 / Optional",
+    selectPlaceholder: "请选择 / Select",
+    requiredBadge: "Req",
+    optionalBadge: "Opt",
+    psychBadge: "Psych",
+    reqErrorPrefix: "请补全必填项 / Complete required item: ",
+    outOfRange: "out of range"
+  }
+};
+
+let currentLang = "bi";
+
+const weights = CFG.networkWeights.w;
+const REQUIRED_TOP10 = Object.entries(weights)
+  .sort((a,b)=>b[1]-a[1])
+  .slice(0,10)
+  .map(([k])=>k);
+const REQUIRED_SET = new Set(REQUIRED_TOP10);
+
+const infoGrid = document.getElementById("infoGrid");
+const scoresReq = document.getElementById("scoresReq");
+const scoresOpt = document.getElementById("scoresOpt");
+
+function t(key){
+  return UI_TEXT[currentLang][key];
+}
+
+function isPsychKey(key){
+  return key === "anxiety_total" || key === "depression_total";
+}
+
+function renderInfo(){
+  const prevInfo = readPatientInfoSafe();
+
+  infoGrid.innerHTML = "";
+  for(const f of INFO_FIELDS){
+    const div = document.createElement("div");
+    div.className = "field";
+
+    let inputHTML = "";
+    if(f.type === "select"){
+      const opts = currentLang === "cn"
+        ? f.optionsCn
+        : currentLang === "en"
+          ? f.optionsEn
+          : f.optionsCn.map((cn, idx)=>{
+              const en = f.optionsEn[idx] || "";
+              if(cn === "" && en === "") return "";
+              if(cn === "") return en;
+              if(en === "") return cn;
+              return `${cn} / ${en}`;
+            });
+
+      inputHTML = `<select id="info_${f.key}">
+        ${opts.map(o=>`<option value="${o}">${o==="" ? t("selectPlaceholder") : o}</option>`).join("")}
+      </select>`;
+    }else if(f.type === "date"){
+      inputHTML = `<input type="date" id="info_${f.key}" />`;
+    }else{
+      inputHTML = `<input type="${f.type}" id="info_${f.key}" placeholder="${f.placeholder||""}" />`;
+    }
+
+    div.innerHTML = `
+      <label class="bilingual">
+        <div>
+          <span class="cn">${f.label}</span>
+          <span class="en">${f.labelEn}</span>
+        </div>
+        <span class="optional">${t("optional")}</span>
+      </label>
+      ${inputHTML}
+    `;
+    infoGrid.appendChild(div);
+
+    const el = document.getElementById(`info_${f.key}`);
+    if(el && prevInfo[f.key] != null){
+      el.value = prevInfo[f.key];
+    }
+  }
+}
+
+function renderScores(){
+  const prevScores = readScoresSafe();
+
+  scoresReq.innerHTML = "";
+  scoresOpt.innerHTML = "";
+
+  const sorted = [...NODES].sort((a,b)=>{
+    const ar = REQUIRED_SET.has(a.key) ? 0 : 1;
+    const br = REQUIRED_SET.has(b.key) ? 0 : 1;
+    if(ar !== br) return ar - br;
+    return (weights[b.key]??0) - (weights[a.key]??0);
+  });
+
+  for(const n of sorted){
+    const isReq = REQUIRED_SET.has(n.key);
+    const isPsych = isPsychKey(n.key);
+
+    const el = document.createElement("div");
+    el.className = `scoreField ${isPsych ? "psych":"symptom"}`;
+
+    el.innerHTML = `
+      <div class="head">
+        <div class="name bilingual">
+          <span class="cn">${n.label}</span>
+          <span class="en">${n.labelEn}</span>
+        </div>
+        <div class="badge ${isPsych ? "psych" : (isReq ? "req":"opt")}">
+          ${isPsych ? t("psychBadge") : (isReq ? t("requiredBadge") : t("optionalBadge"))}
+        </div>
+      </div>
+
+      <div class="ctrl">
+        <input type="number" step="1" min="${n.min}" max="${n.max}"
+               id="num_${n.key}" placeholder="${isReq ? t("requiredBadge") : t("optionalBadge")}" />
+        <input type="range" min="${n.min}" max="${n.max}" step="1"
+               id="rng_${n.key}" value="${n.min}" />
+      </div>
+    `;
+
+    const box = isReq ? scoresReq : scoresOpt;
+    box.appendChild(el);
+
+    const num = el.querySelector(`#num_${n.key}`);
+    const rng = el.querySelector(`#rng_${n.key}`);
+
+    const saved = prevScores[n.key];
+    if(saved !== null && saved !== undefined && !Number.isNaN(saved)){
+      num.value = String(saved);
+      rng.value = String(saved);
+    }
+
+    rng.addEventListener("input", ()=>{
+      num.value = rng.value;
+    });
+
+    num.addEventListener("input", ()=>{
+      const v = num.value;
+      if(v === "") return;
+      const x = clamp(Math.round(Number(v)), n.min, n.max);
+      rng.value = String(x);
+      num.value = String(x);
+    });
+  }
+}
+
+function updateStaticTexts(){
+  document.getElementById("btnExport").textContent = t("btnExport");
+  document.getElementById("btnPrint").textContent = t("btnPrint");
+  document.getElementById("btnLangCn").textContent = t("btnLangCn");
+  document.getElementById("btnLangEn").textContent = t("btnLangEn");
+  document.getElementById("btnLangBi").textContent = t("btnLangBi");
+  document.getElementById("btnRun").textContent = t("btnRun");
+  document.getElementById("btnFillLow").textContent = t("btnFillLow");
+  document.getElementById("btnFillHigh").textContent = t("btnFillHigh");
+  document.getElementById("btnClear").textContent = t("btnClear");
+
+  const status = document.getElementById("status");
+  if(!status.dataset.state || status.dataset.state === "idle") status.textContent = t("statusIdle");
+  if(status.dataset.state === "cleared") status.textContent = t("statusCleared");
+  if(status.dataset.state === "done") status.textContent = t("statusDone");
+
+  const summary = document.getElementById("summaryText");
+  if(summary.dataset.state !== "filled"){
+    summary.textContent = t("summaryDefault");
+  }
+}
+
+function clamp(x,a,b){
+  return Math.min(b, Math.max(a, x));
+}
+
+function readScores(){
+  const x = {};
+  for(const n of NODES){
+    const el = document.getElementById(`num_${n.key}`);
+    const v = el ? el.value : "";
+    x[n.key] = (v === "" || v === null) ? null : Number(v);
+  }
+  return x;
+}
+
+function readScoresSafe(){
+  const x = {};
+  for(const n of NODES){
+    const el = document.getElementById(`num_${n.key}`);
+    if(!el){
+      x[n.key] = null;
+      continue;
+    }
+    const v = el.value;
+    x[n.key] = (v === "" || v === null) ? null : Number(v);
+  }
+  return x;
+}
+
+function readPatientInfo(){
+  const info = {};
+  for(const f of INFO_FIELDS){
+    const el = document.getElementById(`info_${f.key}`);
+    info[f.key] = el ? el.value : "";
+  }
+  return info;
+}
+
+function readPatientInfoSafe(){
+  const info = {};
+  for(const f of INFO_FIELDS){
+    const el = document.getElementById(`info_${f.key}`);
+    info[f.key] = el ? el.value : "";
+  }
+  return info;
+}
+
+function validateRequired(x){
+  for(const k of REQUIRED_TOP10){
+    const node = NODES.find(n=>n.key===k);
+    if(x[k] === null || Number.isNaN(x[k])){
+      return {ok:false, msg:`${t("reqErrorPrefix")}${currentLang==="en" ? node?.labelEn || k : node?.label || k}`};
+    }
+    if(x[k] < node.min || x[k] > node.max){
+      return {ok:false, msg:`${currentLang==="en" ? node.labelEn : node.label} ${t("outOfRange")}`};
+    }
+  }
+  return {ok:true};
+}
+
+function fillForClassification(x){
+  const filled = {...x};
+  for(const n of NODES){
+    if(filled[n.key] === null || Number.isNaN(filled[n.key])){
+      filled[n.key] = CFG.training.mean[n.key];
+    }
+  }
+  return filled;
+}
+
+function fillForRanking(x){
+  const filled = {...x};
+  for(const n of NODES){
+    if(filled[n.key] === null || Number.isNaN(filled[n.key])){
+      filled[n.key] = 0;
+    }
+  }
+  return filled;
+}
+
+function zscore(x){
+  const z = {};
+  for(const n of NODES){
+    const k = n.key;
+    const mu = CFG.training.mean[k];
+    const sd = CFG.training.sd[k] || 1;
+    z[k] = (x[k] - mu) / sd;
+  }
+  return z;
+}
+
+function euclid(z, centroid){
+  let s = 0;
+  for(const n of NODES){
+    const k = n.key;
+    const d = (z[k] ?? 0) - (centroid[k] ?? 0);
+    s += d*d;
+  }
+  return Math.sqrt(s);
+}
+
+function softmax(arr){
+  const m = Math.max(...arr);
+  const exps = arr.map(v => Math.exp(v - m));
+  const s = exps.reduce((p,c)=>p+c,0);
+  return exps.map(v => v/s);
+}
+
+function computeLPA(z){
+  const cls = CFG.lpa.classes;
+  const dists = cls.map(c => euclid(z, c.centroid));
+  const probs = softmax(dists.map(d => -d));
+  let bestIdx = 0;
+  for(let i=1;i<probs.length;i++){
+    if(probs[i] > probs[bestIdx]) bestIdx = i;
+  }
+  return {chosen: cls[bestIdx], probs, pmax: probs[bestIdx]};
+}
+
+function computePriority(xRank){
+  const rows = NODES.map(n=>{
+    const key = n.key;
+    const sev = xRank[key];
+    const w = weights[key] ?? 0.5;
+    const pr = sev * w;
+    return {key, name:n.label, nameEn:n.labelEn, sev, w, pr};
+  }).sort((a,b)=>b.pr-a.pr);
+  return rows;
+}
+
+function buildBars(containerId, items, maxVal, colorClass){
+  const box = document.getElementById(containerId);
+  box.innerHTML = "";
+  for(const it of items){
+    const div = document.createElement("div");
+    div.className = "bar";
+    const pct = maxVal <= 0 ? 0 : (it.value / maxVal) * 100;
+    div.innerHTML = `
+      <div class="top">
+        <div class="nm bilingual">
+          <span class="cn">${it.name}</span>
+          <span class="en">${it.nameEn || ""}</span>
+        </div>
+        <div class="val">${it.right || ""}</div>
+      </div>
+      <div class="track"><div class="fill ${colorClass}" style="width:${pct}%;"></div></div>
+      <div class="bar-note">${it.meta || ""}</div>
+    `;
+    box.appendChild(div);
+  }
+}
+
+function makeInterpretation({risk, xCls, top5, chosen}){
+  const anx = xCls.anxiety_total ?? 0;
+  const dep = xCls.depression_total ?? 0;
+  const topNamesCn = top5.map(t => t.name).join("、");
+  const topNamesEn = top5.map(t => t.nameEn).join(", ");
+
+  const overallCn = risk === "high"
+    ? "患者目前整体处于较高负担状态，需同步关注症状、心理及功能变化。"
+    : "患者目前整体风险较低，但仍建议关注重点症状并持续随访。";
+
+  const overallEn = risk === "high"
+    ? "The patient is currently in a relatively high-burden state, requiring concurrent attention to symptoms, psychology, and function."
+    : "The patient is currently at relatively low risk, but key symptoms still warrant attention and follow-up.";
+
+  const psychCn = (dep >= CFG.thresholds.hadsHigh || anx >= CFG.thresholds.hadsHigh)
+    ? "心理负担较重。"
+    : (dep >= CFG.thresholds.hadsWarn || anx >= CFG.thresholds.hadsWarn)
+      ? "心理维度已有一定影响。"
+      : "心理状态总体可控。";
+
+  const psychEn = (dep >= CFG.thresholds.hadsHigh || anx >= CFG.thresholds.hadsHigh)
+    ? "Psychological burden is relatively high."
+    : (dep >= CFG.thresholds.hadsWarn || anx >= CFG.thresholds.hadsWarn)
+      ? "Psychological factors have a moderate impact."
+      : "Psychological status is generally controllable.";
+
+  return {
+    overallCn,
+    overallEn,
+    blocks: [
+      {
+        titleCn:"风险分层",
+        titleEn:"Risk Stratification",
+        tag:risk === "high" ? "高风险 / High" : "低风险 / Low",
+        tagClass:risk === "high" ? "bad":"good",
+        textCn:chosen.name,
+        textEn:chosen.nameEn
+      },
+      {
+        titleCn:"重点症状",
+        titleEn:"Priority Symptoms",
+        tag:`Top${top5.length}`,
+        tagClass:"warn",
+        textCn:`重点关注：${topNamesCn}`,
+        textEn:`Priority symptoms: ${topNamesEn}`
+      },
+      {
+        titleCn:"心理维度",
+        titleEn:"Psychological Dimension",
+        tag:"Psych",
+        tagClass:"psych",
+        textCn:psychCn,
+        textEn:psychEn
+      }
+    ]
+  };
+}
+
+function renderInterpretation(data){
+  const summaryText = document.getElementById("summaryText");
+  const box = document.getElementById("interpretation");
+  const parsed = makeInterpretation(data);
+
+  summaryText.dataset.state = "filled";
+  summaryText.innerHTML = `
+    <div class="bilingual">
+      <span class="cn">${parsed.overallCn}</span>
+      <span class="en">${parsed.overallEn}</span>
+    </div>
+  `;
+
+  box.innerHTML = "";
+  for(const item of parsed.blocks){
+    const div = document.createElement("div");
+    div.className = "exp-item";
+    div.innerHTML = `
+      <div class="exp-head">
+        <div class="exp-title bilingual">
+          <span class="cn">${item.titleCn}</span>
+          <span class="en">${item.titleEn}</span>
+        </div>
+        <span class="tag ${item.tagClass || ""}">${item.tag}</span>
+      </div>
+      <div class="exp-text bilingual">
+        <span class="cn">${item.textCn}</span>
+        <span class="en">${item.textEn}</span>
+      </div>
+    `;
+    box.appendChild(div);
+  }
+}
+
+function getCurrentAnalysis(){
+  const x = readScores();
+  const v = validateRequired(x);
+  if(!v.ok) return {ok:false, msg:v.msg};
+
+  const info = readPatientInfo();
+  const xCls = fillForClassification(x);
+  const xRank = fillForRanking(x);
+  const z = zscore(xCls);
+  const {chosen, pmax} = computeLPA(z);
+  const risk = chosen.risk;
+  const rank = computePriority(xRank);
+  const top5 = rank.slice(0,5);
+
+  return {ok:true, info, x, xCls, xRank, chosen, pmax, risk, top5};
+}
+
+function syncPanelHeights(){
+  const left = document.getElementById("leftPanel");
+  const right = document.getElementById("rightPanel");
+
+  if(!left || !right) return;
+
+  if(window.innerWidth <= 1080){
+    left.style.minHeight = "";
+    right.style.minHeight = "";
+    return;
+  }
+
+  left.style.minHeight = "";
+  right.style.minHeight = "";
+
+  const leftH = left.offsetHeight;
+  const rightH = right.offsetHeight;
+  const maxH = Math.max(leftH, rightH);
+
+  left.style.minHeight = maxH + "px";
+  right.style.minHeight = maxH + "px";
+}
+
+function render(){
+  const status = document.getElementById("status");
+  const analysis = getCurrentAnalysis();
+
+  if(!analysis.ok){
+    status.dataset.state = "error";
+    status.textContent = analysis.msg;
+    status.style.background = "#fff7ed";
+    status.style.borderColor = "#fed7aa";
+    syncPanelHeights();
+    return;
+  }
+
+  status.dataset.state = "calculating";
+  status.textContent = t("statusCalculating");
+  status.style.background = "#eef2ff";
+  status.style.borderColor = "#c7d2fe";
+
+  const {chosen, risk, xRank, top5, xCls} = analysis;
+
+  document.getElementById("riskLabel").innerHTML = `
+    <div class="bilingual">
+      <span class="cn">${chosen.name}</span>
+      <span class="en">${chosen.nameEn}</span>
+    </div>
+  `;
+
+  document.getElementById("riskDesc").innerHTML =
+    `<span class="tag ${risk==="high" ? "bad":"good"}">${risk==="high" ? "高风险 / High" : "低风险 / Low"}</span>`;
+
+  const maxPr = Math.max(...top5.map(r=>r.pr), 0.0001);
+  buildBars("top5Bars",
+    top5.map(r=>({
+      name: r.name,
+      nameEn: r.nameEn,
+      value: r.pr,
+      right: r.pr.toFixed(2),
+      meta: `Raw ${r.sev.toFixed(0)} · W ${r.w.toFixed(2)}`
+    })),
+    maxPr,
+    "pink"
+  );
+
+  const bridgeItems = CFG.networkWeights.bridgeNodes.map(k=>{
+    const node = NODES.find(n=>n.key===k);
+    const sev = xRank[k] ?? 0;
+    return {
+      name: node?.label || k,
+      nameEn: node?.labelEn || k,
+      value: sev,
+      right: sev.toFixed(0),
+      meta: "Bridge"
+    };
+  });
+  const maxB = Math.max(...bridgeItems.map(r=>r.value), 0.0001);
+  buildBars("bridgeBars", bridgeItems, maxB, "grey");
+
+  renderInterpretation({
+    risk,
+    xCls,
+    top5,
+    chosen
+  });
+
+  status.dataset.state = "done";
+  status.textContent = t("statusDone");
+  status.style.background = "#ecfdf5";
+  status.style.borderColor = "#a7f3d0";
+
+  syncPanelHeights();
+}
+
+function escapeHtml(str){
+  return String(str ?? "")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#39;");
+}
+
+function generateReportHTML(){
+  const analysis = getCurrentAnalysis();
+  if(!analysis.ok) return null;
+
+  const parsed = makeInterpretation({
+    risk: analysis.risk,
+    xCls: analysis.xCls,
+    top5: analysis.top5,
+    chosen: analysis.chosen
+  });
+
+  const infoRows = INFO_FIELDS.map(f=>{
+    const val = analysis.info[f.key] || "—";
+    return `<tr><td>${escapeHtml(f.label)} / ${escapeHtml(f.labelEn)}</td><td>${escapeHtml(val)}</td></tr>`;
+  }).join("");
+
+  const scoreRows = NODES.map(n=>{
+    const v = analysis.x[n.key];
+    const val = (v === null || Number.isNaN(v)) ? "—" : v;
+    return `<tr><td>${escapeHtml(n.label)} / ${escapeHtml(n.labelEn)}</td><td>${escapeHtml(val)}</td></tr>`;
+  }).join("");
+
+  const top5Rows = analysis.top5.map((t, idx)=>`
+    <tr>
+      <td>${idx+1}</td>
+      <td>${escapeHtml(t.name)} / ${escapeHtml(t.nameEn)}</td>
+      <td>${t.sev.toFixed(0)}</td>
+      <td>${t.w.toFixed(2)}</td>
+      <td>${t.pr.toFixed(2)}</td>
+    </tr>
+  `).join("");
+
+  const blocks = parsed.blocks.map(b=>`
+    <div class="block">
+      <h3>${escapeHtml(b.titleCn)} / ${escapeHtml(b.titleEn)}</h3>
+      <p><strong>${escapeHtml(b.tag)}</strong></p>
+      <p>${escapeHtml(b.textCn)}</p>
+      <p class="en">${escapeHtml(b.textEn)}</p>
+    </div>
+  `).join("");
+
+  const now = new Date();
+  const ts = now.getFullYear() + "-" + String(now.getMonth()+1).padStart(2,"0") + "-" + String(now.getDate()).padStart(2,"0") + " " + String(now.getHours()).padStart(2,"0") + ":" + String(now.getMinutes()).padStart(2,"0");
+
+  return `
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>Assessment Report</title>
+<style>
+  body{font-family:Arial,"Microsoft YaHei",sans-serif;color:#111827;margin:28px;line-height:1.6}
+  h1,h2,h3{margin:0 0 10px}
+  h1{font-size:24px}
+  h2{font-size:18px;margin-top:24px;border-bottom:1px solid #e5e7eb;padding-bottom:6px}
+  h3{font-size:15px}
+  .muted{color:#6b7280}
+  .summary{background:#f8fafc;border:1px solid #dbeafe;padding:14px;border-radius:10px}
+  table{width:100%;border-collapse:collapse;margin-top:10px}
+  th,td{border:1px solid #e5e7eb;padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:#f9fafb}
+  .card{border:1px solid #e5e7eb;border-radius:10px;padding:12px;background:#fff}
+  .block{border:1px solid #e5e7eb;border-radius:10px;padding:12px;margin-top:10px;background:#fff}
+  .en{color:#4b5563}
+</style>
+</head>
+<body>
+  <h1>肝癌患者可解释性症状评估报告 / Assessment Report</h1>
+  <div class="muted">Export time: ${ts}</div>
+
+  <h2>一、风险等级 / Risk Level</h2>
+  <div class="card"><strong>${escapeHtml(analysis.chosen.name)} / ${escapeHtml(analysis.chosen.nameEn)}</strong></div>
+
+  <h2>二、综合说明 / Summary</h2>
+  <div class="summary">
+    <p>${escapeHtml(parsed.overallCn)}</p>
+    <p class="en">${escapeHtml(parsed.overallEn)}</p>
+  </div>
+
+  <h2>三、患者信息 / Patient Information</h2>
+  <table><tbody>${infoRows}</tbody></table>
+
+  <h2>四、评分明细 / Score Details</h2>
+  <table><tbody>${scoreRows}</tbody></table>
+
+  <h2>五、Top5 重点症状 / Top 5 Symptoms</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Rank</th><th>Item</th><th>Raw</th><th>Weight</th><th>Priority</th>
+      </tr>
+    </thead>
+    <tbody>${top5Rows}</tbody>
+  </table>
+
+  <h2>六、结果解读 / Interpretation</h2>
+  ${blocks}
+</body>
+</html>
+  `;
+}
+
+function exportReport(){
+  const status = document.getElementById("status");
+  const html = generateReportHTML();
+  if(!html){
+    status.dataset.state = "error";
+    status.textContent = t("statusNeedRequired");
+    status.style.background = "#fff7ed";
+    status.style.borderColor = "#fed7aa";
+    syncPanelHeights();
+    return;
+  }
+
+  const info = readPatientInfo();
+  const namePart = info.patient_id ? String(info.patient_id).trim() : "patient";
+  const safeName = namePart.replace(/[\\/:*?"<>|]/g, "_");
+  const blob = new Blob([html], {type:"text/html;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${safeName}_assessment_report.html`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+
+  status.dataset.state = "exported";
+  status.textContent = t("statusExported");
+  status.style.background = "#ecfdf5";
+  status.style.borderColor = "#a7f3d0";
+
+  syncPanelHeights();
+}
+
+function printReport(){
+  const status = document.getElementById("status");
+  const html = generateReportHTML();
+  if(!html){
+    status.dataset.state = "error";
+    status.textContent = t("statusNeedRequired");
+    status.style.background = "#fff7ed";
+    status.style.borderColor = "#fed7aa";
+    syncPanelHeights();
+    return;
+  }
+
+  const win = window.open("", "_blank");
+  if(!win){
+    status.dataset.state = "error";
+    status.textContent = t("statusPopupBlocked");
+    status.style.background = "#fff7ed";
+    status.style.borderColor = "#fed7aa";
+    syncPanelHeights();
+    return;
+  }
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  setTimeout(()=>win.print(), 400);
+
+  status.dataset.state = "print";
+  status.textContent = t("statusPrintOpened");
+  status.style.background = "#ecfdf5";
+  status.style.borderColor = "#a7f3d0";
+
+  syncPanelHeights();
+}
+
+function setLanguage(mode){
+  currentLang = mode;
+  document.body.classList.remove("lang-cn","lang-en","lang-bi");
+  document.body.classList.add(`lang-${mode}`);
+
+  document.getElementById("btnLangCn").classList.toggle("active", mode==="cn");
+  document.getElementById("btnLangEn").classList.toggle("active", mode==="en");
+  document.getElementById("btnLangBi").classList.toggle("active", mode==="bi");
+
+  renderInfo();
+  renderScores();
+  updateStaticTexts();
+  syncPanelHeights();
+}
+
+document.getElementById("btnLangCn").addEventListener("click", ()=>setLanguage("cn"));
+document.getElementById("btnLangEn").addEventListener("click", ()=>setLanguage("en"));
+document.getElementById("btnLangBi").addEventListener("click", ()=>setLanguage("bi"));
+
+document.getElementById("btnRun").addEventListener("click", render);
+document.getElementById("btnExport").addEventListener("click", ()=>{ render(); exportReport(); });
+document.getElementById("btnPrint").addEventListener("click", ()=>{ render(); printReport(); });
+
+document.getElementById("btnClear").addEventListener("click", ()=>{
+  for(const f of INFO_FIELDS){
+    const el = document.getElementById(`info_${f.key}`);
+    if(el) el.value = "";
+  }
+  for(const n of NODES){
+    document.getElementById(`num_${n.key}`).value = "";
+    document.getElementById(`rng_${n.key}`).value = String(n.min);
+  }
+
+  const status = document.getElementById("status");
+  status.dataset.state = "cleared";
+  status.textContent = t("statusCleared");
+  status.style.background = "#fff";
+  status.style.borderColor = "var(--line)";
+
+  document.getElementById("riskLabel").textContent = "—";
+  document.getElementById("riskDesc").textContent = "—";
+  document.getElementById("top5Bars").innerHTML = "";
+  document.getElementById("bridgeBars").innerHTML = "";
+  const summary = document.getElementById("summaryText");
+  summary.dataset.state = "";
+  summary.textContent = t("summaryDefault");
+  document.getElementById("interpretation").innerHTML = "";
+
+  syncPanelHeights();
+});
+
+document.getElementById("btnFillLow").addEventListener("click", ()=>{
+  const demo = {
+    MDASI_1:0,MDASI_2:1,MDASI_3:0,MDASI_4:1,MDASI_5:0,MDASI_6:0,MDASI_7:0,MDASI_8:1,MDASI_9:0,MDASI_10:0,MDASI_11:0,MDASI_12:0,MDASI_13:0,
+    anxiety_total:3,depression_total:3
+  };
+  for(const n of NODES){
+    const v = demo[n.key];
+    document.getElementById(`num_${n.key}`).value = String(v);
+    document.getElementById(`rng_${n.key}`).value = String(v);
+  }
+  const status = document.getElementById("status");
+  status.dataset.state = "idle";
+  status.textContent = currentLang === "en" ? "Low-risk demo loaded" : currentLang === "cn" ? "已填充低风险示例" : "已填充低风险示例 / Low-risk demo loaded";
+
+  syncPanelHeights();
+});
+
+document.getElementById("btnFillHigh").addEventListener("click", ()=>{
+  const demo = {
+    MDASI_1:6,MDASI_2:7,MDASI_3:3,MDASI_4:6,MDASI_5:7,MDASI_6:4,MDASI_7:4,MDASI_8:6,MDASI_9:5,MDASI_10:3,MDASI_11:7,MDASI_12:2,MDASI_13:4,
+    anxiety_total:12,depression_total:13
+  };
+  for(const n of NODES){
+    const v = demo[n.key];
+    document.getElementById(`num_${n.key}`).value = String(v);
+    document.getElementById(`rng_${n.key}`).value = String(v);
+  }
+  const status = document.getElementById("status");
+  status.dataset.state = "idle";
+  status.textContent = currentLang === "en" ? "High-risk demo loaded" : currentLang === "cn" ? "已填充高风险示例" : "已填充高风险示例 / High-risk demo loaded";
+
+  syncPanelHeights();
+});
+
+renderInfo();
+renderScores();
+setLanguage("bi");
+document.getElementById("status").dataset.state = "idle";
+document.getElementById("status").textContent = t("statusIdle");
+document.getElementById("summaryText").dataset.state = "";
+document.getElementById("summaryText").textContent = t("summaryDefault");
+
+window.addEventListener("load", syncPanelHeights);
+window.addEventListener("resize", syncPanelHeights);
+syncPanelHeights();
+</script>
+</body>
+</html>
